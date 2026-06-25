@@ -51,18 +51,6 @@ species_test = np.array([s.decode() if isinstance(s, bytes) else s for s in spec
 y_true_test = np.zeros((species_test.shape[0]))
 y_true_test[species_test=='Ruddy Kingfisher'] = 1
 
-# example_idx = high_quality[2]
-example_idx = 1
-
-test = dst.root.test
-
-q_test = test.quality_rating[:]
-species_test = test.samples.col("species")
-species_test = np.array([s.decode() if isinstance(s, bytes) else s for s in species_test])
-
-y_true_test = np.zeros((species_test.shape[0]))
-y_true_test[species_test=='Ruddy Kingfisher'] = 1
-
 rng = np.random.default_rng()
 
 """HYPERPARAMETERS"""
@@ -94,36 +82,54 @@ curr_ckpt = [x for x in checkpoints if x['epoch'] == epoch][0]
 
 curr_ckpt = torch.load(ckpt_dir / checkpoint_prefix, map_location=device)
 
-net = test_net().to(device)
+net = test_net(output='spikes').to(device)
 
 all_rasters_test = birdcalledge.training.build_all_rasters_new(test, t_stop, net.dt, size_in=net.size_in)
 
-net.load_state_dict(curr_ckpt["model_state"])
+all_rasters_test = np.array(all_rasters_test)
 
-spec = mapper(net.as_graph(), weight_dtype='float', threshold_dtype='float', dash_dtype='float')
+test_metrics  = {k: [] for k in birdcalledge.evaluation.CONFUSION_KEYS}
 
-spec_pre = copy.copy(spec)
+for thr in threshold_grid:
+    net = test_net(output='spikes', threshold_out=thr).to(device)
 
-spec.update(q.global_quantize(**spec))
+    net.load_state_dict(curr_ckpt["model_state"])
 
-"""
-The recurrent weight matrix is nonzero in the top-right quarter, reflecting
-that the first 63 neurons connect to the next 63 neurons (filled with the 
-weights on the second linear layer of the model). Note that there are no 
-recurrent connections as the diagonal blocks are all zero.
-"""
+    spec = mapper(net.as_graph(), weight_dtype='float', threshold_dtype='float', dash_dtype='float')
 
-quantized_net = XyloSim.from_specification(**spec)
+    spec_pre = copy.copy(spec)
 
-output_test = []
-for idx, curr_raster in enumerate(all_rasters_test):
-    print(f"Current raster: {idx}")
-    curr_output, _, _ = net(curr_raster, record=False)
-    output_test.append(curr_output)
+    spec.update(q.global_quantize(**spec))
 
-output_test = np.array(output_test)
+    """
+    The recurrent weight matrix is nonzero in the top-right quarter, reflecting
+    that the first 63 neurons connect to the next 63 neurons (filled with the 
+    weights on the second linear layer of the model). Note that there are no 
+    recurrent connections as the diagonal blocks are all zero.
+    """
 
+    quantized_net = XyloSim.from_specification(**spec)
 
+    output_test = []
+    for idx, curr_raster in enumerate(all_rasters_test):
+        print(f"Current raster: {idx}")
+        curr_output, _, _ = quantized_net(curr_raster, record=False)
+        output_test.append(curr_output)
+    output_test = np.array(output_test)
+
+    y_pred = np.any(output_test[:, int(1.0 / net.dt):, 0] == 1, axis=1)
+
+    test_rates = birdcalledge.evaluation.confusion_rates(y_true_test, y_pred)
+
+    for k in birdcalledge.evaluation.CONFUSION_KEYS:
+        test_metrics[k].append(test_rates[k])
+
+np.savez(
+    results_dir / f"{checkpoint_prefix}threshold_checkpoint_confusion_metric_quantized_xylosim.npz",
+    thresholds=threshold_grid,
+    test_metrics=test_metrics,
+    allow_pickle=True
+)
 
 # nir_graph = to_nir(net)
 
