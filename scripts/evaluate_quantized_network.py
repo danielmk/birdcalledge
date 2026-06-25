@@ -33,7 +33,7 @@ import pdb
 """HYPERPARAMETERS"""
 results_dir = Path(__file__).parent.parent / 'data'
 ckpt_dir = results_dir / "checkpoints"
-checkpoint_prefix = 'synnetqatv2_pretraining_checkpoint_epoch_2000.pt'
+checkpoint = 'synnetqatv2_pretraining_checkpoint_epoch_2000.pt'
 device = torch.device("cpu")
 test_net = birdcalledge.nets.synnetqatv1
 threshold_grid = np.arange(0.5, 1.55, 0.1)
@@ -80,7 +80,7 @@ epoch = 2000
 curr_ckpt = [x for x in checkpoints if x['epoch'] == epoch][0]
 """
 
-curr_ckpt = torch.load(ckpt_dir / checkpoint_prefix, map_location=device)
+curr_ckpt = torch.load(ckpt_dir / checkpoint, map_location=device)
 
 net = test_net(output='spikes').to(device)
 
@@ -125,7 +125,7 @@ for thr in threshold_grid:
         test_metrics[k].append(test_rates[k])
 
 np.savez(
-    results_dir / f"{checkpoint_prefix}threshold_checkpoint_confusion_metric_quantized_xylosim.npz",
+    results_dir / f"{checkpoint}_confusion_metric_quantized_xylosim.npz",
     thresholds=threshold_grid,
     test_metrics=test_metrics,
     allow_pickle=True
