@@ -33,7 +33,7 @@ import pdb
 """HYPERPARAMETERS"""
 results_dir = Path(__file__).parent.parent / 'data'
 ckpt_dir = results_dir / "checkpoints"
-checkpoint = 'synnetqatv2_pretraining_checkpoint_epoch_2000.pt'
+checkpoint = Path('synnetqatv2_pretraining_checkpoint_epoch_2000.pt')
 device = torch.device("cpu")
 test_net = birdcalledge.nets.synnetqatv1
 threshold_grid = np.arange(0.5, 1.55, 0.1)
@@ -56,29 +56,6 @@ rng = np.random.default_rng()
 """HYPERPARAMETERS"""
 t_stop=2.504
 batch_size=64
-"""
-# ---------------------------------------------------------------------
-# MODEL + OPTIMIZER (must match original training!)
-# ---------------------------------------------------------------------
-synnet_ckpts = sorted(
-    p for p in ckpt_dir.iterdir()
-    if p.is_file() and checkpoint_prefix in p.name
-)
-
-synnet_ckpts = sorted(
-    synnet_ckpts,
-    key=lambda p: torch.load(p, map_location=device).get("epoch", 0)
-)
-
-checkpoints = [
-    torch.load(path, map_location=device)
-    for path in synnet_ckpts
-]
-
-epoch = 2000
-
-curr_ckpt = [x for x in checkpoints if x['epoch'] == epoch][0]
-"""
 
 curr_ckpt = torch.load(ckpt_dir / checkpoint, map_location=device)
 
@@ -125,7 +102,7 @@ for thr in threshold_grid:
         test_metrics[k].append(test_rates[k])
 
 np.savez(
-    results_dir / f"{checkpoint}_confusion_metric_quantized_xylosim.npz",
+    results_dir / f"{checkpoint.stem}_confusion_metric_quantized_xylosim.npz",
     thresholds=threshold_grid,
     test_metrics=test_metrics,
     allow_pickle=True
