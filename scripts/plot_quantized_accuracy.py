@@ -49,5 +49,6 @@ ax.plot(matrix_dict['synnetqatv2 Pretraining']['thresholds'], matrix_dict['synne
 ax.plot(matrix_dict['synnetqatv2 QAT']['thresholds'], matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['balanced_accuracy'], marker='o', color=birdcalledge.config.colors[1], label='QAT trained')
 ax.set_ylabel("Test Balanced Accuracy")
 
-ax.set_ylim((0.5, 1))
+ax.set_ylim((0.4, 1))
 ax.set_xlabel("Threshold")
+ax.legend(["Pretrained Only", "Pretrained + QAT"])
