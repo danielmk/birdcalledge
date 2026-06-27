@@ -148,3 +148,20 @@ def synnetqatv3(output, threshold_out=1.0):
     tau_mem=1e-2,
     dt=5e-3
     )
+
+def synnetqatv4(output, threshold_out=1.0):
+    """Same as v3 but with the same dt as v1"""
+    if output == 'vmem': threshold_out = None
+    return SynNetQAT(
+    n_channels = 16,
+    n_classes = 1,
+    size_hidden_layers = [128, 96, 64, 64, 64, 64],
+    time_constants_per_layer = [2, 2, 4, 4, 8, 8],
+    output=output,
+    threshold_out=threshold_out,
+    threshold=0.7,
+    tau_syn_base=1e-2,
+    tau_syn_out=1e-2,
+    tau_mem=1e-2,
+    dt=1e-3
+    )

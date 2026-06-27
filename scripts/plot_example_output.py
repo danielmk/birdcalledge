@@ -16,7 +16,6 @@ import torch
 import birdcalledge
 from pathlib import Path
 
-
 dataset_path = Path(__file__).parent.parent / 'data' / 'dataset_split.h5'
 
 dst = tables.open_file(dataset_path, mode="r")
