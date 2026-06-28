@@ -25,8 +25,8 @@ import birdcalledge
 
 results_dir = Path(__file__).parent.parent / 'data'
 
-matrix_path = {"synnetqatv2 Pretraining":  results_dir / 'synnetqatv2_pretraining_checkpoint_epoch_2000_confusion_metric_quantized_xylosim.npz',
-               "synnetqatv2 QAT": results_dir / 'synnetqatv2_from_checkpoint_2000_epoch_2000_confusion_metric_quantized_xylosim.npz',}
+matrix_path = {"synnetqatv2 Pretraining":  results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_pretraining_checkpoint_epoch_2000.npz',
+               "synnetqatv2 QAT": results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_from_checkpoint_2000_epoch_2000.npz',}
 
 
 matrix_dict = {}
@@ -39,16 +39,25 @@ plt.rcParams.update({'font.size': 14})
 plt.rcParams['font.family'] = 'Arial'
 
 fig, ax = plt.subplots(
-    ncols=1,
-    figsize=(10.0, 10.0),
-    sharex=True,
+    ncols=2,
+    figsize=(10.0, 5.8),
     constrained_layout=True,
 )
 
-ax.plot(matrix_dict['synnetqatv2 Pretraining']['thresholds'], matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['balanced_accuracy'], marker='o', color=birdcalledge.config.colors[0], label='Pretrained')
-ax.plot(matrix_dict['synnetqatv2 QAT']['thresholds'], matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['balanced_accuracy'], marker='o', color=birdcalledge.config.colors[1], label='QAT trained')
-ax.set_ylabel("Test Balanced Accuracy")
+ax[0].plot(matrix_dict['synnetqatv2 Pretraining']['thresholds'], matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['balanced_accuracy'], marker='o', color=birdcalledge.config.colors_qual[0], label='Pretrained')
+ax[0].plot(matrix_dict['synnetqatv2 QAT']['thresholds'], matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['balanced_accuracy'], marker='o', color=birdcalledge.config.colors_qual[1], label='QAT trained')
+ax[0].set_ylabel("Test Balanced Accuracy")
+ax[0].set_xlabel("Threshold")
+ax[0].set_xlim((0.4, 1.6))
 
-ax.set_ylim((0.4, 1))
-ax.set_xlabel("Threshold")
-ax.legend(["Pretrained Only", "Pretrained + QAT"])
+
+ax[1].plot(matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['fpr'], matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['tpr'], color=birdcalledge.config.colors_qual[0], marker='o')
+ax[1].plot(matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['fpr'], matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['tpr'], color=birdcalledge.config.colors_qual[1], marker='o')
+ax[1].set_ylabel("True Positive Rate")
+ax[1].set_xlabel("False Positive Rate")
+ax[1].set_xlim((0.0, 0.5))
+
+for a in ax.flatten():
+    a.set_ylim((0.4, 1))
+    a.legend(["Pretrained Only", "Pretrained + QAT"])
+

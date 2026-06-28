@@ -33,7 +33,8 @@ np.random.seed(68)
 dev = "cuda:0" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
 
-dataset_path = r'Y:\danielmk\okeon\dataset_split.h5'
+results_dir = Path(__file__).parent.parent / 'data'
+dataset_path = results_dir / 'dataset_split.h5'
 
 dst = tables.open_file(dataset_path, mode="r")
 
@@ -119,3 +120,4 @@ for epoch in range(2001):
 
     print(f'Epoch: {epoch} | Loss: {this_loss} | Global scale: {net.global_scale} | Output scale: {net.output_scale}')
 
+np.save(results_dir / 'synnetqatv2_QAT_replicate_loss.npy', loss_t) 
