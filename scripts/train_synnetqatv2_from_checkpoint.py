@@ -17,7 +17,7 @@ from IPython.display import Audio
 import torch
 import sys
 import pdb
-import xylo
+import birdcalledge
 from pathlib import Path
 
 """HYPERPARAMETERS"""
@@ -52,11 +52,11 @@ noise_idx = np.where(
     species == "None"
 )[0]
 
-net = xylo.nets.synnetqatv1(output='vmem')
+net = birdcalledge.nets.synnetqatv1(output='vmem')
 
 net.qat_enabled = True
 
-CHECKPOINT_PATH = Path(r"C:\Users\Daniel\repos\xylo\scripts\checkpoints\synnetqatv2_pretraining_checkpoint_epoch_2000.pt")
+CHECKPOINT_PATH = results_dir / "checkpoints" / "synnetqatv2_pretraining_replicate_checkpoint_epoch_2000.pt"
 
 net.load_state_dict(torch.load(CHECKPOINT_PATH)['model_state'])
 
@@ -69,10 +69,10 @@ for m in net.seq:
         print(f'Min: {m.weight.min()}; Max: {m.weight.max()}')
 
 print("Building rasters...")
-all_rasters = xylo.training.build_all_rasters(train, t_stop, net.dt, net.size_in).to(device)
+all_rasters = birdcalledge.training.build_all_rasters(train, t_stop, net.dt, net.size_in).to(device)
 
 print("Building labels...")
-all_labels = xylo.training.build_all_labels(train, species, t_stop, net.dt, net.size_out, label_amplitude=1.0).to(device)
+all_labels = birdcalledge.training.build_all_labels(train, species, t_stop, net.dt, net.size_out, label_amplitude=1.0).to(device)
 
 print("Labels Done.")
 
@@ -87,7 +87,7 @@ for epoch in range(2001):
     
     net.qat_alpha = min(1.0, epoch / qat_warmup)
 
-    batch_idc = xylo.training.sample_batch(batch_size, signal_idx, noise_idx)
+    batch_idc = birdcalledge.training.sample_batch(batch_size, signal_idx, noise_idx)
 
     rasters, labels = all_rasters[batch_idc], all_labels[batch_idc]
 
@@ -102,8 +102,8 @@ for epoch in range(2001):
     this_loss = loss.item()
     
     if epoch % 50 == 0:
-        xylo.training.save_checkpoint(
-            rf"C:\Users\Daniel\repos\xylo\scripts\checkpoints\synnetqatv2_from_checkpoint_2000_epoch_{epoch:04d}.pt",
+        birdcalledge.training.save_checkpoint(
+            results_dir / 'checkpoints' / f'synnetqatv2_replicate_from_checkpoint_2000_epoch_{epoch:04d}.pt', 
             net,
             optimizer,
             epoch,

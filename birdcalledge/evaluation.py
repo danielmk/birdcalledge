@@ -15,6 +15,37 @@ CONFUSION_KEYS = [
     "TP", "TN", "FP", "FN",
 ]
 
+def confusion_metrics_over_thresholds(output, y_true, eval_start_idx=0):
+    """
+    Compute confusion metrics for each threshold slice in a pre-computed output array.
+
+    Parameters
+    ----------
+    output : array-like, shape (n_thresholds, n_samples, n_timesteps, n_channels)
+        Spike output from the network at each threshold.
+    y_true : array-like, shape (n_samples,)
+        Ground-truth binary labels.
+    eval_start_idx : int
+        Timestep index from which to start evaluating spikes (to skip pre-stimulus).
+
+    Returns
+    -------
+    metrics : dict[str, list]
+        Each key from CONFUSION_KEYS maps to a list of length n_thresholds.
+    """
+    output = np.asarray(output)
+    metrics = {k: [] for k in CONFUSION_KEYS}
+
+    for thr_idx in range(output.shape[0]):
+        spikes = output[thr_idx]
+        y_pred = np.any(spikes[:, eval_start_idx:, 0] == 1, axis=1)
+        rates = confusion_rates(y_true, y_pred)
+        for k in CONFUSION_KEYS:
+            metrics[k].append(rates[k])
+
+    return metrics
+
+
 def confusion_rates(y_true, y_pred):
     """
     Compute all relevant binary classification rates

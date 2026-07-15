@@ -25,8 +25,8 @@ import birdcalledge
 
 results_dir = Path(__file__).parent.parent / 'data'
 
-matrix_path = {"synnetqatv2 Pretraining":  results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_pretraining_checkpoint_epoch_2000.npz',
-               "synnetqatv2 QAT": results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_from_checkpoint_2000_epoch_2000.npz',}
+matrix_path = {"synnetqatv2 Pretraining":  results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_pretraining_epoch_2000.npz',
+               "synnetqatv2 QAT": results_dir / 'confusion_metric_quantized_xylosim_synnetqatv2_QAT_from_2000_epoch_2000.npz',}
 
 
 matrix_dict = {}
@@ -35,12 +35,16 @@ for net in matrix_path.keys():
     matrix_dict[net] = np.load(matrix_path[net], allow_pickle=True)
 
 plt.rcParams['svg.fonttype'] = 'none'
-plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'font.size': 16})
 plt.rcParams['font.family'] = 'Arial'
 
+loss_dir = results_dir / 'loss'
+loss_pretrain = np.load(loss_dir / 'synnetqatv2_pretraining_replicate_loss.npy')
+loss_qat = np.load(loss_dir / 'synnetqatv2_replicate_from_checkpoint_2000_loss.npy')
+
 fig, ax = plt.subplots(
-    ncols=2,
-    figsize=(10.0, 5.8),
+    ncols=3,
+    figsize=(15.0, 5.8),
     constrained_layout=True,
 )
 
@@ -50,14 +54,21 @@ ax[0].set_ylabel("Test Balanced Accuracy")
 ax[0].set_xlabel("Threshold")
 ax[0].set_xlim((0.4, 1.6))
 
-
 ax[1].plot(matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['fpr'], matrix_dict['synnetqatv2 Pretraining']['test_metrics'].item()['tpr'], color=birdcalledge.config.colors_qual[0], marker='o')
 ax[1].plot(matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['fpr'], matrix_dict['synnetqatv2 QAT']['test_metrics'].item()['tpr'], color=birdcalledge.config.colors_qual[1], marker='o')
 ax[1].set_ylabel("True Positive Rate")
 ax[1].set_xlabel("False Positive Rate")
 ax[1].set_xlim((0.0, 0.5))
 
-for a in ax.flatten():
+for a in ax[:2].flatten():
     a.set_ylim((0.4, 1))
     a.legend(["Pretrained Only", "Pretrained + QAT"])
+
+phase_boundary = len(loss_pretrain)
+ax[2].plot(np.arange(phase_boundary), loss_pretrain, color=birdcalledge.config.colors_qual[0], label='Pretraining')
+ax[2].plot(np.arange(phase_boundary, phase_boundary + len(loss_qat)), loss_qat, color=birdcalledge.config.colors_qual[1], label='QAT')
+ax[2].axvline(phase_boundary, color='gray', linestyle='--', linewidth=0.8)
+ax[2].set_ylabel("Training MSE Loss")
+ax[2].set_xlabel("Epoch")
+ax[2].legend()
 

@@ -40,6 +40,26 @@ class SampleMeta(tables.IsDescription):
     sr = tables.Float64Col()
 
 
+def load_test_labels(dataset_path, target_species='Ruddy Kingfisher'):
+    """
+    Load species labels from the test split of the dataset.
+
+    Returns
+    -------
+    y_true : np.ndarray of int, shape (n_samples,)
+        1 for target_species, 0 otherwise.
+    species : np.ndarray of str, shape (n_samples,)
+        Raw species string for each sample.
+    """
+    with tables.open_file(dataset_path, mode="r") as dst:
+        species_raw = dst.root.test.samples.col("species")
+
+    species = np.array([s.decode() if isinstance(s, bytes) else s for s in species_raw])
+    y_true = (species == target_species).astype(int)
+
+    return y_true, species
+
+
 def create_empty_dataset(
     h5_path: str,
     audio_length: int,
