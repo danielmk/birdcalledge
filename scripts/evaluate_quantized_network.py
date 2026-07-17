@@ -33,10 +33,10 @@ import pdb
 """HYPERPARAMETERS"""
 results_dir = Path(__file__).parent.parent / 'data'
 ckpt_dir = results_dir / "checkpoints"
-checkpoint = Path('synnetqatv2_pretraining_checkpoint_epoch_2000.pt')
+checkpoint = Path('synnetqatv2_from_checkpoint_2000_epoch_2000.pt')
 device = torch.device("cpu")
-test_net = birdcalledge.nets.synnetqatv1
-threshold_grid = np.arange(0.5, 1.55, 0.1)
+test_net = birdcalledge.nets.synnetqatv2
+threshold_grid = np.arange(1.0, 1.05, 0.1)
 
 dataset_path = Path(__file__).parent.parent / 'data' / 'dataset_split.h5'
 
@@ -90,7 +90,7 @@ for thr in threshold_grid:
     output_test = []
     for idx, curr_raster in enumerate(all_rasters_test):
         print(f"Current raster: {idx}")
-        curr_output, _, _ = quantized_net(curr_raster, record=False)
+        curr_output, _, _ = quantized_net(curr_raster, record=True)
         output_test.append(curr_output)
     output_test = np.array(output_test)
 

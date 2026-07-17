@@ -24,26 +24,19 @@ import sys
 import time
 import pdb
 import birdcalledge
+import warnings
 
 results_dir = Path(__file__).parent.parent / 'data'
 ckpt_dir = results_dir / "checkpoints"
-checkpoint = Path('synnetqatv2_pretraining_checkpoint_epoch_2000.pt')
+checkpoint = Path('synnetqatv2_replicate_from_checkpoint_2000_epoch_2000.pt')
 device = torch.device("cpu")
-test_net = birdcalledge.nets.synnetqatv1
-threshold_grid = np.arange(0.5, 1.55, 0.1)
+test_net = birdcalledge.nets.synnetqatv2
 
-dataset_path = Path(__file__).parent.parent / 'data' / 'dataset_split.h5'
+dataset_path = results_dir / 'dataset_split.h5'
 
 dst = tables.open_file(dataset_path, mode="r")
 
 test = dst.root.test
-
-q_test = test.quality_rating[:]
-species_test = test.samples.col("species")
-species_test = np.array([s.decode() if isinstance(s, bytes) else s for s in species_test])
-
-y_true_test = np.zeros((species_test.shape[0]))
-y_true_test[species_test=='Ruddy Kingfisher'] = 1
 
 """HYPERPARAMETERS"""
 t_stop=2.504
@@ -58,12 +51,13 @@ curr_ckpt = torch.load(ckpt_dir / checkpoint, map_location=device)
 
 """SETUP"""
 print("Building rasters...")
-all_rasters = birdcalledge.training.build_all_rasters(test, t_stop, net.dt, net.size_in)
+all_rasters = birdcalledge.training.build_all_rasters_new(test, t_stop, net.dt, net.size_in)
 
 # Move **once**
 all_rasters = all_rasters
 
-thresholds = np.arange(0.5, 1.55, 0.1)
+# thresholds = np.arange(0.5, 1.55, 0.1)
+thresholds = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
 
 all_outputs = []
 all_recs = []
@@ -74,6 +68,8 @@ for th in thresholds:
     
     net.load_state_dict(curr_ckpt["model_state"])
     
+    net.eval()
+    
     """QUANTIZE AND BULID XYLO 3 CONFIGURATION"""
     # getting the model specifications using the mapper function
     spec = mapper(net.as_graph(), weight_dtype='float', threshold_dtype='float', dash_dtype='float')
@@ -83,7 +79,7 @@ for th in thresholds:
     spec.update(q.global_quantize(**spec))
     
     xylo_conf, is_valid, msg = config_from_specification(**spec)
-    
+    sys.exit()
     # Getting the connected devices and choosing XyloAudio 3 board
     xylo_nodes = hdu.find_xylo_a3_boards()
     
@@ -96,34 +92,32 @@ for th in thresholds:
     Xmod = XyloSamna(device=xa3, config=xylo_conf, dt=net.dt)
     
     time.sleep(10)
-    
+
     try:
         Xmod(all_rasters[0], record=False, record_power=True)
     except:
-        raise Warning()
+        warnings.warn("Xmod was not ready yet.")
 
     out_list = []
-    state_list = []
     rec_list = []
     
     for idx, raster in enumerate(all_rasters):
         print(f"Curr idx: {idx}")
         out, state, rec = Xmod(raster, record=False, record_power=True)
         out_list.append(out)
-        state_list.append(state)
         rec_list.append(rec)
-    
+
     all_outputs.append(out_list)
 
     all_recs.append(rec_list)
     
 
-np.savez(f'{checkpoint.stem}_accelerate_time_deployment.npz',
+np.savez(results_dir / f'accelerate_time_deployment_{checkpoint.stem}.npz',
          output=all_outputs,
          thresholds=thresholds,
          recs=all_recs)
     
-    # output, out2, out3 = net(all_rasters, record=True)
+
 
 
 
