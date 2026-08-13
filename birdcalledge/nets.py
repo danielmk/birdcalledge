@@ -70,3 +70,33 @@ def synnetqatv5(output, threshold_out=1.0):
     tau_mem=2e-2,
     dt=1e-3
     )
+
+def synnetqatv6(output, threshold_out=1.0):
+    if output == 'vmem': threshold_out = None
+    return SynNetQAT(
+    n_channels = 16,
+    n_classes = 1,
+    size_hidden_layers = [128, 96, 64],
+    time_constants_per_layer = [2, 4, 8],
+    output=output,
+    threshold_out=threshold_out,
+    threshold=1.0,
+    tau_syn_out=2e-3,
+    tau_mem=2e-2,
+    dt=1e-3
+    )
+
+def synnetqatv7(output, threshold_out=1.0):
+    if output == 'vmem': threshold_out = None
+    return SynNetQAT(
+    n_channels = 16,
+    n_classes = 1,
+    size_hidden_layers = [96, 64, 64, 64, 64, 64],
+    time_constants_per_layer = [2, 2, 4, 4, 8, 8],
+    output=output,
+    threshold_out=threshold_out,
+    threshold=1.0,
+    tau_syn_out=2e-3,
+    tau_mem=2e-2,
+    dt=1e-3
+    )
