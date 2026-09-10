@@ -8,7 +8,8 @@ Schema:
         ├── samples        (Table)
         ├── audio           (EArray)
         ├── spike_times     (VLArray)
-        └── spike_channels  (VLArray)
+        ├── spike_channels  (VLArray)
+        └── quality_rating  (EArray)
 """
 
 import tables
@@ -131,6 +132,15 @@ def create_empty_dataset(
             group,
             "spike_channels",
             atom=tables.Int16Atom(),
+            filters=filters
+        )
+
+        # Manual quality score per sample, NaN until it is rated
+        h5.create_earray(
+            group,
+            "quality_rating",
+            atom=tables.Float32Atom(),
+            shape=(0,),
             filters=filters
         )
 
