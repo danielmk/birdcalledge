@@ -29,10 +29,12 @@ def merge_intervals_pandas(df, start_col="Time_start", end_col="Time_End", conf_
         # strict: start a new group if current start >= previous running_end
         new_group = d[start_col] >= running_end.shift(fill_value=-np.inf)
 
-    grp = new_group.cumsum()
-
-    out = (d.groupby(grp, as_index=False)
-             .agg({start_col: 'min', end_col: 'max', conf_col: "max",}))
+    # the label has to be a column, otherwise pandas warns that it excludes the
+    # grouper from the result and will start including it in a future version
+    out = (d.assign(_interval=new_group.cumsum())
+             .groupby("_interval", as_index=False)
+             .agg({start_col: 'min', end_col: 'max', conf_col: "max",})
+             .drop(columns="_interval"))
 
     return out
 
