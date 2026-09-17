@@ -105,7 +105,11 @@ def connect(xylo_conf, dt, raster):
 def save_partial(path, outputs, n_done, thresholds):
     """Checkpoint atomically, so an interrupted run loses nothing."""
     tmp = path.with_suffix(path.suffix + ".tmp")
-    np.savez(tmp, output=outputs, n_done=n_done, thresholds=thresholds)
+
+    # write through a file object, np.savez appends .npz to a bare path
+    with open(tmp, "wb") as handle:
+        np.savez(handle, output=outputs, n_done=n_done, thresholds=thresholds)
+
     os.replace(tmp, path)
 
 
@@ -140,9 +144,11 @@ def main():
     outputs = None
     n_done = 0
     if partial_path.exists():
-        partial = np.load(partial_path, allow_pickle=True)
-        outputs = partial['output']
-        n_done = int(partial['n_done'])
+        # the handle has to be closed, otherwise the next checkpoint cannot
+        # replace the file it was read from
+        with np.load(partial_path, allow_pickle=True) as partial:
+            outputs = partial['output']
+            n_done = int(partial['n_done'])
         print(f"resuming, {n_done}/{len(THRESHOLDS) * n_samples} already deployed", flush=True)
 
     t0 = time.time()
