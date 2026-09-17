@@ -41,9 +41,15 @@ class SampleMeta(tables.IsDescription):
     sr = tables.Float64Col()
 
 
-def load_test_labels(dataset_path, target_species='Ruddy Kingfisher'):
+def load_test_labels(dataset_path, target_species='Ruddy Kingfisher', group_name='test'):
     """
-    Load species labels from the test split of the dataset.
+    Load species labels from one split of the dataset.
+
+    Parameters
+    ----------
+    group_name : str, optional
+        Split to read (default: "test"). The multi-species validation set
+        built by process_validation_dataset.py lives in "validation".
 
     Returns
     -------
@@ -53,7 +59,7 @@ def load_test_labels(dataset_path, target_species='Ruddy Kingfisher'):
         Raw species string for each sample.
     """
     with tables.open_file(dataset_path, mode="r") as dst:
-        species_raw = dst.root.test.samples.col("species")
+        species_raw = dst.get_node(f"/{group_name}").samples.col("species")
 
     species = np.array([s.decode() if isinstance(s, bytes) else s for s in species_raw])
     y_true = (species == target_species).astype(int)
